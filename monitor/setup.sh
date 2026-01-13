@@ -13,7 +13,8 @@ sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh 
 sudo cp proxy.py /home/mitmproxyuser/proxy.py
 
 # start proxy in background (reads config from environment variables)
-sudo -u mitmproxyuser -H --preserve-env bash -e -c 'cd /home/mitmproxyuser && ~/.local/bin/uv run proxy.py &'
+sudo -u mitmproxyuser -H --preserve-env=INPUT_TOKEN,GITHUB_SERVER_URL,GITHUB_API_URL,ACTIONS_ID_TOKEN_REQUEST_URL,ACTIONS_ID_TOKEN_REQUEST_TOKEN \
+  bash -e -c 'cd /home/mitmproxyuser && ~/.local/bin/uv run proxy.py &'
 
 # wait for proxy to start and generate CA certificate
 counter=0
