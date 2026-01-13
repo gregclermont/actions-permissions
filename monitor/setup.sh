@@ -15,8 +15,8 @@ sudo cp proxy.py config.json /home/mitmproxyuser/
 sudo chown mitmproxyuser:mitmproxyuser /home/mitmproxyuser/config.json
 sudo chmod 600 /home/mitmproxyuser/config.json
 
-# Start proxy in background
-sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py &
+# Start proxy in background (--python 3.12 ensures compatible version)
+sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run --python 3.12 /home/mitmproxyuser/proxy.py &
 
 # Setup iptables while proxy starts (doesn't need cert)
 sudo sysctl -w net.ipv4.ip_forward=1
