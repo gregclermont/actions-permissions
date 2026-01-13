@@ -6,28 +6,17 @@
 GitHub Actions API call monitor using mitmproxy.
 
 Runs a transparent proxy that logs GitHub API calls made with the workflow token.
-Configuration is read from GitHub Actions environment variables.
 """
 
+import argparse
 import asyncio
 import base64
 import json
-import os
 import sys
 from urllib.parse import urlsplit
 
 from mitmproxy import options, http
 from mitmproxy.tools.dump import DumpMaster
-
-
-def get_hosts_from_env():
-    """Compute monitored hosts from GitHub Actions environment variables."""
-    env_vars = ['GITHUB_SERVER_URL', 'GITHUB_API_URL', 'ACTIONS_ID_TOKEN_REQUEST_URL']
-    hosts = set()
-    for var in env_vars:
-        if var in os.environ:
-            hosts.add(urlsplit(os.environ[var]).hostname.lower())
-    return list(hosts)
 
 
 class GitHubAPIMonitor:
@@ -120,22 +109,22 @@ async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None)
 
 
 def main():
-    hosts = get_hosts_from_env()
-    if not hosts:
-        print("Error: No hosts to monitor. Set GITHUB_SERVER_URL/GITHUB_API_URL", file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='GitHub API call monitor')
+    parser.add_argument('--hosts', required=True, help='Comma-separated hosts to monitor')
+    parser.add_argument('--token', required=True, help='GitHub token to detect')
+    parser.add_argument('--output', default='/home/mitmproxyuser/out.txt', help='Output file')
+    parser.add_argument('--id-token-url', help='OIDC token request URL')
+    parser.add_argument('--id-token', help='OIDC token')
+    args = parser.parse_args()
 
-    token = os.environ.get('INPUT_TOKEN')
-    if not token:
-        print("Error: No token. Set INPUT_TOKEN", file=sys.stderr)
-        sys.exit(1)
+    hosts = [h.strip() for h in args.hosts.split(',')]
 
     asyncio.run(run_proxy(
         hosts=hosts,
-        token=token,
-        output_file='/home/mitmproxyuser/out.txt',
-        id_token_url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL'),
-        id_token=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN'),
+        token=args.token,
+        output_file=args.output,
+        id_token_url=args.id_token_url,
+        id_token=args.id_token,
     ))
 
 

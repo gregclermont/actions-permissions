@@ -92,7 +92,29 @@ async function run() {
       core.saveState('isPost', true)
       const { spawn } = require('child_process');
 
-      const command = spawn('bash', ['-e', 'setup.sh'], { cwd: `${__dirname}/..` })
+      // Compute hosts to monitor
+      const hosts = new Set();
+      if (process.env.GITHUB_SERVER_URL) {
+        hosts.add(new URL(process.env.GITHUB_SERVER_URL).hostname.toLowerCase());
+      }
+      if (process.env.GITHUB_API_URL) {
+        hosts.add(new URL(process.env.GITHUB_API_URL).hostname.toLowerCase());
+      }
+      if (process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
+        hosts.add(new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL).hostname.toLowerCase());
+      }
+
+      const token = core.getInput('token');
+      const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
+      const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
+
+      const command = spawn('bash', [
+        '-e', 'setup.sh',
+        Array.from(hosts).join(','),
+        token,
+        idTokenUrl,
+        idToken
+      ], { cwd: `${__dirname}/..` })
 
       command.stdout.on('data', output => {
         console.log(output.toString())
