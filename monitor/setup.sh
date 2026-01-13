@@ -50,10 +50,10 @@ echo "$(date +%T.%3N) iptables ready"
 counter=0
 while [ ! -f /home/mitmproxyuser/.mitmproxy/mitmproxy-ca-cert.pem ]
 do
-  echo "$(date +%T.%3N) waiting for proxy to generate the certificate..."
-  sleep 1
+  sleep 0.25
   counter=$((counter+1))
-  if [ $counter -gt 10 ]; then
+  if [ $counter -gt 40 ]; then
+    echo "Timeout waiting for certificate"
     exit 1
   fi
 done
