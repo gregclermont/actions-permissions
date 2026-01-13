@@ -7,11 +7,14 @@ sudo useradd --create-home mitmproxyuser
 sudo passwd -d mitmproxyuser
 
 # install uv as mitmproxyuser (UV_UNMANAGED_INSTALL skips receipt file for CI)
+echo "$(date +%T.%3N) Installing uv..."
 sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_UNMANAGED_INSTALL=/home/mitmproxyuser/.local/bin sh'
+echo "$(date +%T.%3N) uv installed"
 
 # copy proxy script
 sudo cp proxy.py /home/mitmproxyuser/proxy.py
 
+echo "$(date +%T.%3N) Starting proxy..."
 # start proxy in background
 # Arguments: hosts token [id_token_url] [id_token] [debug]
 proxy_args="--hosts $1 --token $2"
@@ -30,13 +33,14 @@ sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyus
 counter=0
 while [ ! -f /home/mitmproxyuser/.mitmproxy/mitmproxy-ca-cert.pem ]
 do
-  echo "waiting for proxy to generate the certificate..."
+  echo "$(date +%T.%3N) waiting for proxy to generate the certificate..."
   sleep 1
   counter=$((counter+1))
   if [ $counter -gt 10 ]; then
     exit 1
   fi
 done
+echo "$(date +%T.%3N) Certificate ready"
 
 # install mitmproxy certificate as CA
 sudo mkdir -p /usr/local/share/ca-certificates/extra
