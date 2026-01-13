@@ -5,6 +5,7 @@ permissions:
   contents: read
   issues: read
   pull-requests: read
+  id-token: write
 
 jobs:
   job1:
@@ -46,3 +47,10 @@ jobs:
             -H "Authorization: Bearer ${{ github.token }}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://Api.github.com/repos/${{ github.event.repository.owner.login }}/${{ github.event.repository.name }}/labels
+
+      # test OIDC token request
+      - name: oidc
+        run: |
+          curl -s \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange"
