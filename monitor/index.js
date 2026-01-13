@@ -52,15 +52,22 @@ async function run() {
       // Parse JSONL format
       const requests = data.split('\n').map(line => JSON.parse(line));
 
-      // Build summary
+      // Build summary grouped by user-agent in chronological order
       let summary = core.summary.addHeading('GitHub API calls detected', 4);
       if (requests.length === 0) {
         summary.addRaw('No GitHub API calls to monitored hosts.');
       } else {
-        const lines = requests.map(req => {
+        const lines = [];
+        let currentUA = null;
+        for (const req of requests) {
+          const ua = req.user_agent || 'unknown';
+          if (ua !== currentUA) {
+            currentUA = ua;
+            lines.push(ua);
+          }
           const label = req.oidc ? ' (OIDC)' : '';
-          return `${req.method} ${req.host}${req.path}${label}`;
-        });
+          lines.push(`  ${req.method} ${req.host}${req.path}${label}`);
+        }
         summary.addCodeBlock(lines.join('\n'), 'text');
       }
       await summary.write();

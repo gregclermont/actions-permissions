@@ -40,10 +40,12 @@ class GitHubAPIMonitor:
                 return False
         return token in header
 
-    def _write_request(self, method, host, path, query, oidc=False, headers=None):
+    def _write_request(self, method, host, path, query, user_agent=None, oidc=False, headers=None):
         record = {'method': method, 'host': host, 'path': path}
         if query:
             record['query'] = query
+        if user_agent:
+            record['user_agent'] = user_agent
         if oidc:
             record['oidc'] = True
 
@@ -76,13 +78,15 @@ class GitHubAPIMonitor:
                 headers['_host_header'] = flow.request.host_header
                 headers['_authority'] = getattr(flow.request, 'authority', None)
 
+            user_agent = flow.request.headers.get('User-Agent')
+
             # Check for GitHub token
             if self._contains_token(auth, self.token):
-                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, headers=headers)
+                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, user_agent=user_agent, headers=headers)
 
             # Check for OIDC token request (uses ACTIONS_ID_TOKEN_REQUEST_TOKEN)
             elif self.id_token and self._contains_token(auth, self.id_token):
-                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, oidc=True, headers=headers)
+                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, user_agent=user_agent, oidc=True, headers=headers)
 
         except Exception:
             import traceback
