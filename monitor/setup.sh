@@ -2,6 +2,13 @@
 
 set -e
 
+# Cleanup iptables on failure to avoid breaking runner communication
+cleanup() {
+  sudo iptables -t nat -F 2>/dev/null || true
+  sudo ip6tables -t nat -F 2>/dev/null || true
+}
+trap cleanup ERR
+
 # Create mitmproxyuser - proxy won't intercept local traffic from same user
 sudo useradd mitmproxyuser
 sudo mkdir -p /home/mitmproxyuser/.local/bin
