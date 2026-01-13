@@ -1,9 +1,11 @@
+console.log(`${new Date().toISOString()} Action JS started`);
 const core = require('@actions/core');
 const {DefaultArtifactClient} = require('@actions/artifact')
 const crypto = require("crypto");
 const fs = require('fs');
 
 async function run() {
+  console.log(`${new Date().toISOString()} run() called`);
   try {
     const configString = core.getInput('config');
     let config = {};
