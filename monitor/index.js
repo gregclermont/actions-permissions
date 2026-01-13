@@ -1,23 +1,17 @@
-console.log(`${new Date().toISOString()} Action JS started`);
 const core = require('@actions/core');
-const {DefaultArtifactClient} = require('@actions/artifact')
-const crypto = require("crypto");
+const {DefaultArtifactClient} = require('@actions/artifact');
+const {spawn} = require('child_process');
+const crypto = require('crypto');
 const fs = require('fs');
 
 async function run() {
-  console.log(`${new Date().toISOString()} run() called`);
   try {
     const configString = core.getInput('config');
-    let config = {};
-    if (configString) {
-      config = JSON.parse(configString);
-    }
-    if (!config.hasOwnProperty('create_artifact')) {
-      config['create_artifact'] = true;
-    }
-    if (!config.hasOwnProperty('enabled')) {
-      config['enabled'] = true;
-    }
+    const config = {
+      create_artifact: true,
+      enabled: true,
+      ...(configString ? JSON.parse(configString) : {})
+    };
 
     if (!config.enabled)
       return;
@@ -105,8 +99,7 @@ async function run() {
       }
     }
     else {
-      core.saveState('isPost', true)
-      const { spawn } = require('child_process');
+      core.saveState('isPost', true);
 
       // Compute hosts to monitor
       const hosts = new Set();
@@ -125,31 +118,31 @@ async function run() {
       const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || null;
 
       // Write config file for proxy
-      const config = {
+      const proxyConfig = {
         hosts: Array.from(hosts),
         token,
         idToken,
         debug
       };
-      fs.writeFileSync(`${__dirname}/../config.json`, JSON.stringify(config));
+      fs.writeFileSync(`${__dirname}/../config.json`, JSON.stringify(proxyConfig));
 
-      const command = spawn('bash', ['-e', 'setup.sh'], { cwd: `${__dirname}/..` })
+      const proc = spawn('bash', ['-e', 'setup.sh'], {cwd: `${__dirname}/..`});
 
-      command.stdout.on('data', output => {
-        console.log(output.toString())
+      proc.stdout.on('data', output => {
+        console.log(output.toString());
         if (output.toString().includes('--all done--')) {
-          process.exit(0)
+          process.exit(0);
         }
-      })
-      command.stderr.on('data', output => {
-        console.log(`stderr: ${output.toString()}`)
-      })
-      command.on('exit', code => {
+      });
+      proc.stderr.on('data', output => {
+        console.log(`stderr: ${output.toString()}`);
+      });
+      proc.on('exit', code => {
         if (code !== 0) {
           core.setFailed(`Exited with code ${code}`);
           process.exit(code);
         }
-      })
+      });
     }
   } catch (error) {
     core.setFailed(error.message);
