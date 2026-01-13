@@ -86,6 +86,23 @@ async function run() {
           tempDirectory,
           { continueOnError: false }
         );
+
+        // Upload debug log if it exists
+        const debugLog = `${rootDir}/out-debug.txt`;
+        if (fs.existsSync(debugLog)) {
+          const debugData = fs.readFileSync(debugLog, 'utf8').trim();
+          if (debugData) {
+            const debugRequests = debugData.split('\n').map(line => JSON.parse(line));
+            const debugArtifactFile = `${tempDirectory}/api-calls-debug.json`;
+            fs.writeFileSync(debugArtifactFile, JSON.stringify(debugRequests, null, 2));
+            await new DefaultArtifactClient().uploadArtifact(
+              `${process.env['GITHUB_JOB']}-api-calls-debug-${crypto.randomBytes(16).toString("hex")}`,
+              [debugArtifactFile],
+              tempDirectory,
+              { continueOnError: false }
+            );
+          }
+        }
       }
     }
     else {
@@ -105,6 +122,7 @@ async function run() {
       }
 
       const token = core.getInput('token');
+      const debug = core.getInput('debug') === 'true';
       const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
       const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
 
@@ -113,7 +131,8 @@ async function run() {
         Array.from(hosts).join(','),
         token,
         idTokenUrl,
-        idToken
+        idToken,
+        debug ? '1' : ''
       ], { cwd: `${__dirname}/..` })
 
       command.stdout.on('data', output => {

@@ -13,13 +13,16 @@ sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh 
 sudo cp proxy.py /home/mitmproxyuser/proxy.py
 
 # start proxy in background
-# Arguments: hosts token [id_token_url] [id_token]
+# Arguments: hosts token [id_token_url] [id_token] [debug]
 proxy_args="--hosts $1 --token $2"
 if [ -n "$3" ]; then
   proxy_args="$proxy_args --id-token-url $3"
 fi
 if [ -n "$4" ]; then
   proxy_args="$proxy_args --id-token $4"
+fi
+if [ -n "$5" ]; then
+  proxy_args="$proxy_args --debug"
 fi
 sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py $proxy_args &
 

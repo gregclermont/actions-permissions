@@ -22,14 +22,18 @@ from mitmproxy.tools.dump import DumpMaster
 class GitHubAPIMonitor:
     """mitmproxy addon that logs GitHub API calls."""
 
-    def __init__(self, token, output_file, id_token_url=None, id_token=None):
+    def __init__(self, token, output_file, id_token_url=None, id_token=None, debug=False):
         self.token = token
         self.output_file = output_file
         self.id_token_url = urlsplit(id_token_url) if id_token_url else None
         self.id_token = id_token
+        self.debug = debug
+        self.debug_file = output_file.replace('.txt', '-debug.txt')
 
         # Create empty output file
         open(output_file, 'a+').close()
+        if debug:
+            open(self.debug_file, 'a+').close()
 
     def _contains_token(self, header, token):
         if header.upper().strip().startswith('BASIC '):
@@ -39,7 +43,7 @@ class GitHubAPIMonitor:
                 return False
         return token in header
 
-    def _write_request(self, method, host, path, query, oidc=False):
+    def _write_request(self, method, host, path, query, oidc=False, headers=None):
         record = {'method': method, 'host': host, 'path': path}
         if query:
             record['query'] = query
@@ -48,6 +52,11 @@ class GitHubAPIMonitor:
 
         with open(self.output_file, 'a+') as f:
             f.write(json.dumps(record) + '\n')
+
+        if self.debug and headers:
+            debug_record = {**record, 'headers': headers}
+            with open(self.debug_file, 'a+') as f:
+                f.write(json.dumps(debug_record) + '\n')
 
     def requestheaders(self, flow: http.HTTPFlow):
         try:
@@ -60,16 +69,22 @@ class GitHubAPIMonitor:
             if not auth:
                 return
 
+            # Collect headers for debug logging (redact auth)
+            headers = None
+            if self.debug:
+                headers = {k: ('REDACTED' if k.lower() == 'authorization' else v)
+                          for k, v in flow.request.headers.items()}
+
             # Check for GitHub token
             if self._contains_token(auth, self.token):
-                self._write_request(flow.request.method, host, url_parts.path, url_parts.query)
+                self._write_request(flow.request.method, host, url_parts.path, url_parts.query, headers=headers)
 
             # Check for OIDC token
             elif self.id_token and self._contains_token(auth, self.id_token):
                 if self.id_token_url and flow.request.method == 'GET':
                     if (host == self.id_token_url.hostname.lower() and
                         url_parts.path.lower() == self.id_token_url.path.lower()):
-                        self._write_request(flow.request.method, host, url_parts.path, url_parts.query, oidc=True)
+                        self._write_request(flow.request.method, host, url_parts.path, url_parts.query, oidc=True, headers=headers)
 
         except Exception:
             import traceback
@@ -78,7 +93,7 @@ class GitHubAPIMonitor:
                 f.write(traceback.format_exc() + '\n')
 
 
-async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None):
+async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None, debug=False):
     """Run mitmproxy with the GitHub API monitor addon."""
 
     # Build allow_hosts regex from host list
@@ -99,6 +114,7 @@ async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None)
         output_file=output_file,
         id_token_url=id_token_url,
         id_token=id_token,
+        debug=debug,
     )
     master.addons.add(addon)
 
@@ -115,6 +131,7 @@ def main():
     parser.add_argument('--output', default='/home/mitmproxyuser/out.txt', help='Output file')
     parser.add_argument('--id-token-url', help='OIDC token request URL')
     parser.add_argument('--id-token', help='OIDC token')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     args = parser.parse_args()
 
     hosts = [h.strip() for h in args.hosts.split(',')]
@@ -125,6 +142,7 @@ def main():
         output_file=args.output,
         id_token_url=args.id_token_url,
         id_token=args.id_token,
+        debug=args.debug,
     ))
 
 

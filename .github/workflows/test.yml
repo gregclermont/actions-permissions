@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: gregclermont/actions-permissions/monitor@main
+        with:
+          debug: true
 
       - uses: actions/checkout@v4
         with:
