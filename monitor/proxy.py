@@ -43,8 +43,8 @@ class GitHubAPIMonitor:
                 return False
         return token in header
 
-    def _write_request(self, method, host, path, query, oidc=False, headers=None):
-        record = {'method': method, 'host': host, 'path': path}
+    def _write_request(self, method, path, query, oidc=False, headers=None):
+        record = {'method': method, 'path': path}
         if query:
             record['query'] = query
         if oidc:
@@ -60,9 +60,7 @@ class GitHubAPIMonitor:
 
     def requestheaders(self, flow: http.HTTPFlow):
         try:
-            # mitmproxy provides host/path with showhost=True, and allow_hosts
-            # ensures we only see requests to monitored hosts
-            host = flow.request.host.lower()
+            # allow_hosts ensures we only see requests to monitored hosts
             url_parts = urlsplit(flow.request.url)
 
             auth = flow.request.headers.get('Authorization', '')
@@ -77,14 +75,15 @@ class GitHubAPIMonitor:
 
             # Check for GitHub token
             if self._contains_token(auth, self.token):
-                self._write_request(flow.request.method, host, url_parts.path, url_parts.query, headers=headers)
+                self._write_request(flow.request.method, url_parts.path, url_parts.query, headers=headers)
 
             # Check for OIDC token
             elif self.id_token and self._contains_token(auth, self.id_token):
                 if self.id_token_url and flow.request.method == 'GET':
+                    host = flow.request.headers.get('Host', flow.request.host).lower()
                     if (host == self.id_token_url.hostname.lower() and
                         url_parts.path.lower() == self.id_token_url.path.lower()):
-                        self._write_request(flow.request.method, host, url_parts.path, url_parts.query, oidc=True, headers=headers)
+                        self._write_request(flow.request.method, url_parts.path, url_parts.query, oidc=True, headers=headers)
 
         except Exception:
             import traceback
