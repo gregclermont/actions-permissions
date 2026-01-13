@@ -1,11 +1,5 @@
 on:
   workflow_dispatch:
-    inputs:
-      enable_debug:
-        description: "Enable logging"
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -18,33 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        # source:
-        # https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job#standard-github-hosted-runners-for-public-repositories
-        # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
-        - ubuntu-24.04-arm
-        - ubuntu-22.04-arm
-        - ubuntu-latest # eventually will pick up the next version and test it
-        - ubuntu-24.04 # ubuntu-latest
+        - ubuntu-latest
         - ubuntu-22.04
-        - macos-latest # eventually will pick up the next version and test it
-        - macos-26 # public preview
-        - macos-15 # macos-latest
-        - macos-15-intel
-        - macos-14-large
-        - macos-14
-        - macos-13
-        - macos-13-xlarge
-        #- windows-latest # eventually will pick up the next version and test it
-        #- windows-11-arm
-        #- windows-2025
-        #- windows-2022 # windows-latest
-        #- windows-2019
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@main
-        with:
-          debug: ${{ github.event.inputs.enable_debug }}
+      - uses: GitHubSecurityLab/actions-permissions/monitor@uv
 
       - uses: actions/checkout@v4
         with:
