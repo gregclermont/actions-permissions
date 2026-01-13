@@ -63,10 +63,10 @@ async function run() {
           const ua = req.user_agent || 'unknown';
           if (ua !== currentUA) {
             currentUA = ua;
-            html += `<tr><th colspan="3">${ua}</th></tr>`;
+            html += `<tr><th colspan="2" align="left">${ua}</th></tr>`;
           }
           const label = req.oidc ? ' (OIDC)' : '';
-          html += `<tr><td>${req.method}</td><td>${req.host}</td><td>${req.path}${label}</td></tr>`;
+          html += `<tr><td>${req.method}</td><td><b>${req.host}</b>${req.path}${label}</td></tr>`;
         }
         html += '</table>';
         summary.addRaw(html);
