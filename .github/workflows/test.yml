@@ -8,14 +8,7 @@ permissions:
 
 jobs:
   job1:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - ubuntu-latest
-        - ubuntu-22.04
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: gregclermont/actions-permissions/monitor@main
 
