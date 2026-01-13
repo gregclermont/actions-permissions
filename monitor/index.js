@@ -125,17 +125,20 @@ async function run() {
 
       const token = core.getInput('token');
       const debug = core.getInput('debug') === 'true';
-      const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
-      const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
+      const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || null;
+      const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || null;
 
-      const command = spawn('bash', [
-        '-e', 'setup.sh',
-        Array.from(hosts).join(','),
+      // Write config file for proxy
+      const config = {
+        hosts: Array.from(hosts),
         token,
         idTokenUrl,
         idToken,
-        debug ? '1' : ''
-      ], { cwd: `${__dirname}/..` })
+        debug
+      };
+      fs.writeFileSync(`${__dirname}/../config.json`, JSON.stringify(config));
+
+      const command = spawn('bash', ['-e', 'setup.sh'], { cwd: `${__dirname}/..` })
 
       command.stdout.on('data', output => {
         console.log(output.toString())

@@ -8,11 +8,9 @@ GitHub Actions API call monitor using mitmproxy.
 Runs a transparent proxy that logs GitHub API calls made with the workflow token.
 """
 
-import argparse
 import asyncio
 import base64
 import json
-import sys
 from urllib.parse import urlsplit
 
 from mitmproxy import options, http
@@ -124,24 +122,16 @@ async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None,
 
 
 def main():
-    parser = argparse.ArgumentParser(description='GitHub API call monitor')
-    parser.add_argument('--hosts', required=True, help='Comma-separated hosts to monitor')
-    parser.add_argument('--token', required=True, help='GitHub token to detect')
-    parser.add_argument('--output', default='/home/mitmproxyuser/out.txt', help='Output file')
-    parser.add_argument('--id-token-url', help='OIDC token request URL')
-    parser.add_argument('--id-token', help='OIDC token')
-    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
-    args = parser.parse_args()
-
-    hosts = [h.strip() for h in args.hosts.split(',')]
+    with open('/home/mitmproxyuser/config.json') as f:
+        config = json.load(f)
 
     asyncio.run(run_proxy(
-        hosts=hosts,
-        token=args.token,
-        output_file=args.output,
-        id_token_url=args.id_token_url,
-        id_token=args.id_token,
-        debug=args.debug,
+        hosts=config['hosts'],
+        token=config['token'],
+        output_file='/home/mitmproxyuser/out.txt',
+        id_token_url=config.get('idTokenUrl'),
+        id_token=config.get('idToken'),
+        debug=config.get('debug', False),
     ))
 
 

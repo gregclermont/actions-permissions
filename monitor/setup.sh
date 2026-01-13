@@ -16,23 +16,13 @@ echo "$(date +%T.%3N) Installing uv..."
 sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_UNMANAGED_INSTALL=/home/mitmproxyuser/.local/bin sh'
 echo "$(date +%T.%3N) uv installed"
 
-# copy proxy script
-sudo cp proxy.py /home/mitmproxyuser/proxy.py
+# copy proxy script and config
+sudo cp proxy.py config.json /home/mitmproxyuser/
+sudo chown mitmproxyuser:mitmproxyuser /home/mitmproxyuser/config.json
+sudo chmod 600 /home/mitmproxyuser/config.json
 
 echo "$(date +%T.%3N) Starting proxy..."
-# start proxy in background
-# Arguments: hosts token [id_token_url] [id_token] [debug]
-proxy_args="--hosts $1 --token $2"
-if [ -n "$3" ]; then
-  proxy_args="$proxy_args --id-token-url $3"
-fi
-if [ -n "$4" ]; then
-  proxy_args="$proxy_args --id-token $4"
-fi
-if [ -n "$5" ]; then
-  proxy_args="$proxy_args --debug"
-fi
-sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py $proxy_args &
+sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py &
 
 # setup iptables while proxy starts (doesn't need cert)
 echo "$(date +%T.%3N) Setting up iptables..."
