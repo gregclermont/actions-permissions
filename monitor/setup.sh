@@ -14,8 +14,14 @@ sudo cp proxy.py /home/mitmproxyuser/proxy.py
 
 # start proxy in background
 # Arguments: hosts token [id_token_url] [id_token]
-sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py \
-    --hosts "$1" --token "$2" --id-token-url "$3" --id-token "$4" &
+proxy_args="--hosts $1 --token $2"
+if [ -n "$3" ]; then
+  proxy_args="$proxy_args --id-token-url $3"
+fi
+if [ -n "$4" ]; then
+  proxy_args="$proxy_args --id-token $4"
+fi
+sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py $proxy_args &
 
 # wait for proxy to start and generate CA certificate
 counter=0
