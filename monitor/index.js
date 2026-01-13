@@ -52,23 +52,12 @@ async function run() {
       // Parse JSONL format
       const requests = data.split('\n').map(line => JSON.parse(line));
 
-      // Deduplicate for display
-      const seen = new Set();
-      const uniqueCalls = [];
-      for (const req of requests) {
-        const key = `${req.method} ${req.host}${req.path}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          uniqueCalls.push(req);
-        }
-      }
-
       // Build summary
       let summary = core.summary.addHeading('GitHub API calls detected', 4);
-      if (uniqueCalls.length === 0) {
+      if (requests.length === 0) {
         summary.addRaw('No GitHub API calls to monitored hosts.');
       } else {
-        const lines = uniqueCalls.map(req => {
+        const lines = requests.map(req => {
           const label = req.oidc ? ' (OIDC)' : '';
           return `${req.method} ${req.host}${req.path}${label}`;
         });
