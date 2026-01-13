@@ -56,7 +56,7 @@ async function run() {
       const seen = new Set();
       const uniqueCalls = [];
       for (const req of requests) {
-        const key = `${req.method} ${req.path}`;
+        const key = `${req.method} ${req.host}${req.path}`;
         if (!seen.has(key)) {
           seen.add(key);
           uniqueCalls.push(req);
@@ -70,7 +70,7 @@ async function run() {
       } else {
         const lines = uniqueCalls.map(req => {
           const label = req.oidc ? ' (OIDC)' : '';
-          return `${req.method} ${req.path}${label}`;
+          return `${req.method} ${req.host}${req.path}${label}`;
         });
         summary.addCodeBlock(lines.join('\n'), 'text');
       }

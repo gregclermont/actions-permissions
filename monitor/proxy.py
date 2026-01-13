@@ -40,8 +40,8 @@ class GitHubAPIMonitor:
                 return False
         return token in header
 
-    def _write_request(self, method, path, query, oidc=False, headers=None):
-        record = {'method': method, 'path': path}
+    def _write_request(self, method, host, path, query, oidc=False, headers=None):
+        record = {'method': method, 'host': host, 'path': path}
         if query:
             record['query'] = query
         if oidc:
@@ -78,11 +78,11 @@ class GitHubAPIMonitor:
 
             # Check for GitHub token
             if self._contains_token(auth, self.token):
-                self._write_request(flow.request.method, url_parts.path, url_parts.query, headers=headers)
+                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, headers=headers)
 
             # Check for OIDC token request (uses ACTIONS_ID_TOKEN_REQUEST_TOKEN)
             elif self.id_token and self._contains_token(auth, self.id_token):
-                self._write_request(flow.request.method, url_parts.path, url_parts.query, oidc=True, headers=headers)
+                self._write_request(flow.request.method, flow.request.pretty_host, url_parts.path, url_parts.query, oidc=True, headers=headers)
 
         except Exception:
             import traceback
