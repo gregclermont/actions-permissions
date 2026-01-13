@@ -71,12 +71,6 @@ class GitHubAPIMonitor:
             if self.debug:
                 headers = {k: ('REDACTED' if k.lower() == 'authorization' else v)
                           for k, v in flow.request.headers.items()}
-                # Add flow.request.* properties to understand HTTP/1.1 vs HTTP/2
-                headers['_http_version'] = flow.request.http_version
-                headers['_host'] = flow.request.host
-                headers['_pretty_host'] = flow.request.pretty_host
-                headers['_host_header'] = flow.request.host_header
-                headers['_authority'] = getattr(flow.request, 'authority', None)
 
             user_agent = flow.request.headers.get('User-Agent')
 
