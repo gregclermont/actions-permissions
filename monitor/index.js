@@ -16,32 +16,18 @@ async function run() {
     if (!config.hasOwnProperty('enabled')) {
       config['enabled'] = true;
     }
-    if (!config.hasOwnProperty('debug')) {
-      config['debug'] = false;
-    }
 
     if (!config.enabled)
       return;
 
-    const debug = core.getInput('debug').toUpperCase() === 'TRUE' || config.debug || process.env.RUNNER_DEBUG;
-    if (debug) {
-      core.exportVariable('RUNNER_DEBUG', 1);
-    }
-
-    const hosts = new Set();
-    hosts.add(process.env.GITHUB_SERVER_URL.split('/')[2].toLowerCase());
-    hosts.add(process.env.GITHUB_API_URL.split('/')[2].toLowerCase());
-    if (process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
-      hosts.add(process.env.ACTIONS_ID_TOKEN_REQUEST_URL.split('/')[2].toLowerCase());
+    // Fail fast on unsupported OS
+    if (process.env.RUNNER_OS !== 'Linux') {
+      core.setFailed('Only Linux runners are supported');
+      return;
     }
 
     if (!!core.getState('isPost')) {
       const rootDir = '/home/mitmproxyuser';
-
-      const debugLog = `${rootDir}/debug.log`;
-      if (fs.existsSync(debugLog)) {
-        core.info(fs.readFileSync(debugLog, 'utf8'));
-      }
 
       const errorLog = `${rootDir}/error.log`;
       if (fs.existsSync(errorLog)) {
@@ -56,10 +42,6 @@ async function run() {
       }
 
       const data = fs.readFileSync(outFile, 'utf8').trim();
-      if (debug) {
-        console.log(`logged: ${data}`);
-      }
-
       if (!data) {
         core.summary.addRaw('No GitHub API calls detected.').write();
         return;
@@ -68,11 +50,10 @@ async function run() {
       // Parse JSONL format
       const requests = data.split('\n').map(line => JSON.parse(line));
 
-      // Filter to relevant hosts and deduplicate for display
+      // Deduplicate for display
       const seen = new Set();
       const uniqueCalls = [];
       for (const req of requests) {
-        if (!hosts.has(req.host.toLowerCase())) continue;
         const key = `${req.method} ${req.path}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -111,11 +92,7 @@ async function run() {
       core.saveState('isPost', true)
       const { spawn } = require('child_process');
 
-      bashArgs = ['-e', 'setup.sh', Array.from(hosts).join(",")];
-      if (debug)
-        bashArgs.unshift('-v');
-
-      const command = spawn('bash', bashArgs, { cwd: `${__dirname}/..` })
+      const command = spawn('bash', ['-e', 'setup.sh'], { cwd: `${__dirname}/..` })
 
       command.stdout.on('data', output => {
         console.log(output.toString())

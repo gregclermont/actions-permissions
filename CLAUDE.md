@@ -33,14 +33,16 @@ The built output goes to `dist/index.js` in each directory.
    - Initial phase: Spawns `setup.sh` to configure transparent proxy
    - Post phase: Reads captured API calls from `/home/mitmproxyuser/out.txt`, displays in summary, uploads as artifact
 
-2. **`setup.sh`**: Linux-only setup for transparent proxy:
+2. **`setup.sh`**: Linux-only OS setup:
    - Creates `mitmproxyuser` to run proxy (avoids intercepting proxy's own traffic)
    - Installs mitmproxy via uv
    - Configures CA certificates and iptables redirection
+   - Launches `proxy.py`
 
-3. **`mitm_plugin.py`**: Simple mitmproxy addon (~100 lines) that:
-   - Detects requests using the GitHub token
-   - Logs raw request data: `{method, host, path, query}`
+3. **`proxy.py`**: Runs mitmproxy programmatically:
+   - Configures transparent proxy mode and host filtering
+   - Includes addon that logs requests using the GitHub token
+   - Outputs raw request data: `{method, host, path, query}`
 
 ### Advisor Action (`advisor/`)
 
