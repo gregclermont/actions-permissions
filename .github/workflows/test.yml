@@ -8,8 +8,11 @@ permissions:
   id-token: write
 
 jobs:
-  job1:
-    runs-on: ubuntu-latest
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: gregclermont/actions-permissions/monitor@main
         with:
