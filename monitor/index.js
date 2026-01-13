@@ -125,14 +125,12 @@ async function run() {
 
       const token = core.getInput('token');
       const debug = core.getInput('debug') === 'true';
-      const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || null;
       const idToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || null;
 
       // Write config file for proxy
       const config = {
         hosts: Array.from(hosts),
         token,
-        idTokenUrl,
         idToken,
         debug
       };

@@ -20,10 +20,9 @@ from mitmproxy.tools.dump import DumpMaster
 class GitHubAPIMonitor:
     """mitmproxy addon that logs GitHub API calls."""
 
-    def __init__(self, token, output_file, id_token_url=None, id_token=None, debug=False):
+    def __init__(self, token, output_file, id_token=None, debug=False):
         self.token = token
         self.output_file = output_file
-        self.id_token_url = urlsplit(id_token_url) if id_token_url else None
         self.id_token = id_token
         self.debug = debug
         self.debug_file = output_file.replace('.txt', '-debug.txt')
@@ -75,13 +74,9 @@ class GitHubAPIMonitor:
             if self._contains_token(auth, self.token):
                 self._write_request(flow.request.method, url_parts.path, url_parts.query, headers=headers)
 
-            # Check for OIDC token
+            # Check for OIDC token request (uses ACTIONS_ID_TOKEN_REQUEST_TOKEN)
             elif self.id_token and self._contains_token(auth, self.id_token):
-                if self.id_token_url and flow.request.method == 'GET':
-                    host = flow.request.headers.get('Host', flow.request.host).lower()
-                    if (host == self.id_token_url.hostname.lower() and
-                        url_parts.path.lower() == self.id_token_url.path.lower()):
-                        self._write_request(flow.request.method, url_parts.path, url_parts.query, oidc=True, headers=headers)
+                self._write_request(flow.request.method, url_parts.path, url_parts.query, oidc=True, headers=headers)
 
         except Exception:
             import traceback
@@ -90,7 +85,7 @@ class GitHubAPIMonitor:
                 f.write(traceback.format_exc() + '\n')
 
 
-async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None, debug=False):
+async def run_proxy(hosts, token, output_file, id_token=None, debug=False):
     """Run mitmproxy with the GitHub API monitor addon."""
 
     # Build allow_hosts regex from host list
@@ -109,7 +104,6 @@ async def run_proxy(hosts, token, output_file, id_token_url=None, id_token=None,
     addon = GitHubAPIMonitor(
         token=token,
         output_file=output_file,
-        id_token_url=id_token_url,
         id_token=id_token,
         debug=debug,
     )
@@ -129,7 +123,6 @@ def main():
         hosts=config['hosts'],
         token=config['token'],
         output_file='/home/mitmproxyuser/out.txt',
-        id_token_url=config.get('idTokenUrl'),
         id_token=config.get('idToken'),
         debug=config.get('debug', False),
     ))
