@@ -6,8 +6,8 @@ set -e
 sudo useradd --create-home mitmproxyuser
 sudo passwd -d mitmproxyuser
 
-# install uv as mitmproxyuser
-sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+# install uv as mitmproxyuser (UV_UNMANAGED_INSTALL skips receipt file for CI)
+sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh | UV_UNMANAGED_INSTALL=1 sh'
 
 # copy proxy script
 sudo cp proxy.py /home/mitmproxyuser/proxy.py
