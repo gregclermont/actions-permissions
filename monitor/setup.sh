@@ -18,17 +18,7 @@ sudo chmod 600 /home/mitmproxyuser/config.json
 # Start proxy in background (--python 3.12 ensures compatible version)
 sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run --python 3.12 /home/mitmproxyuser/proxy.py &
 
-# Setup iptables while proxy starts (doesn't need cert)
-sudo sysctl -w net.ipv4.ip_forward=1
-sudo sysctl -w net.ipv6.conf.all.forwarding=1
-sudo sysctl -w net.ipv4.conf.all.send_redirects=0
-sudo iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 80 -j REDIRECT --to-port 8080
-sudo iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 443 -j REDIRECT --to-port 8080
-sudo ip6tables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 80 -j REDIRECT --to-port 8080
-sudo ip6tables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 443 -j REDIRECT --to-port 8080
-sudo mkdir -p /usr/local/share/ca-certificates/extra
-
-# Wait for proxy to generate CA certificate
+# Wait for proxy to generate CA certificate (before iptables to avoid breaking runner comms)
 counter=0
 while [ ! -f /home/mitmproxyuser/.mitmproxy/mitmproxy-ca-cert.pem ]; do
   sleep 0.25
@@ -39,7 +29,17 @@ while [ ! -f /home/mitmproxyuser/.mitmproxy/mitmproxy-ca-cert.pem ]; do
   fi
 done
 
+# Setup iptables now that proxy is confirmed running
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+sudo sysctl -w net.ipv4.conf.all.send_redirects=0
+sudo iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 80 -j REDIRECT --to-port 8080
+sudo iptables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 443 -j REDIRECT --to-port 8080
+sudo ip6tables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 80 -j REDIRECT --to-port 8080
+sudo ip6tables -t nat -A OUTPUT -p tcp -m owner ! --uid-owner mitmproxyuser --dport 443 -j REDIRECT --to-port 8080
+
 # Install mitmproxy certificate as system CA
+sudo mkdir -p /usr/local/share/ca-certificates/extra
 sudo openssl x509 -in /home/mitmproxyuser/.mitmproxy/mitmproxy-ca-cert.pem -inform PEM -out ~/mitmproxy-ca-cert.crt
 sudo cp ~/mitmproxy-ca-cert.crt /usr/local/share/ca-certificates/extra/mitmproxy-ca-cert.crt
 sudo dpkg-reconfigure -p critical ca-certificates
