@@ -25,7 +25,6 @@ async function run() {
 
     const debug = core.getInput('debug').toUpperCase() === 'TRUE' || config.debug || process.env.RUNNER_DEBUG;
     if (debug) {
-      // for the bash script
       core.exportVariable('RUNNER_DEBUG', 1);
     }
 
@@ -37,18 +36,12 @@ async function run() {
     }
 
     if (!!core.getState('isPost')) {
-
       const rootDir = '/home/mitmproxyuser';
 
       const debugLog = `${rootDir}/debug.log`;
       if (fs.existsSync(debugLog)) {
-        // using core.info instead of core.debug to print even if the runner itself doesn't run in debug mode
         core.info(fs.readFileSync(debugLog, 'utf8'));
       }
-
-      const data = fs.readFileSync(`${rootDir}/out.txt`, 'utf8');
-      if (debug)
-        console.log(`logged: ${data}`);
 
       const errorLog = `${rootDir}/error.log`;
       if (fs.existsSync(errorLog)) {
@@ -56,59 +49,59 @@ async function run() {
         process.exit(1);
       }
 
-      const results = JSON.parse(`[${data.trim().replace(/\r?\n|\r/g, ',')}]`);
+      const outFile = `${rootDir}/out.txt`;
+      if (!fs.existsSync(outFile)) {
+        core.summary.addRaw('No GitHub API calls detected.').write();
+        return;
+      }
 
-      let permissions = new Map();
-      let wasUnknown = false;
-      for (const result of results) {
-        if (!hosts.has(result.host.toLowerCase()))
-          continue;
+      const data = fs.readFileSync(outFile, 'utf8').trim();
+      if (debug) {
+        console.log(`logged: ${data}`);
+      }
 
-        for (const p of result.permissions) {
-          const kind = Object.keys(p)[0];
-          const perm = p[kind];
+      if (!data) {
+        core.summary.addRaw('No GitHub API calls detected.').write();
+        return;
+      }
 
-          if (kind === 'unknown') {
-            core.warning(`The github token was used to call ${result.method} ${result.host}${result.path} but the permission is unknown. Please report this to the action author.`);
-            wasUnknown = true;
-            continue;
-          }
+      // Parse JSONL format
+      const requests = data.split('\n').map(line => JSON.parse(line));
 
-          if (permissions.has(kind)) {
-            if (perm === "write") {
-              permissions.set(kind, perm)
-            }
-          } else {
-            permissions.set(kind, perm)
-          }
+      // Filter to relevant hosts and deduplicate for display
+      const seen = new Set();
+      const uniqueCalls = [];
+      for (const req of requests) {
+        if (!hosts.has(req.host.toLowerCase())) continue;
+        const key = `${req.method} ${req.path}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueCalls.push(req);
         }
       }
 
-      let summary = 'permissions:';
-      if (permissions.size === 0) {
-        summary += ' {}'
+      // Build summary
+      let summary = core.summary.addHeading('GitHub API calls detected', 4);
+      if (uniqueCalls.length === 0) {
+        summary.addRaw('No GitHub API calls to monitored hosts.');
       } else {
-        summary += '\n'
-        for (const [kind, perm] of permissions) {
-          summary += `  ${kind}: ${perm}\n`;
-        }
+        const lines = uniqueCalls.map(req => {
+          const label = req.oidc ? ' (OIDC)' : '';
+          return `${req.method} ${req.path}${label}`;
+        });
+        summary.addCodeBlock(lines.join('\n'), 'text');
       }
+      await summary.write();
 
-      if (wasUnknown) {
-        summary += "\nAt least one call wasn't recognized. Please check the logs and report this to the action author.";
-      }
-
-      core.summary
-        .addRaw('#### Minimal required permissions:\n')
-        .addCodeBlock(summary, 'yaml')
-        .write();
-
+      // Upload raw log as artifact for advisor
       if (config.create_artifact) {
         const tempDirectory = process.env['RUNNER_TEMP'];
-        fs.writeFileSync(`${tempDirectory}/permissions`, JSON.stringify(Object.fromEntries(permissions)));
+        const artifactFile = `${tempDirectory}/api-calls.json`;
+        // Write as proper JSON array
+        fs.writeFileSync(artifactFile, JSON.stringify(requests));
         await new DefaultArtifactClient().uploadArtifact(
-          `${process.env['GITHUB_JOB']}-permissions-${crypto.randomBytes(16).toString("hex")}`,
-          [`${tempDirectory}/permissions`],
+          `${process.env['GITHUB_JOB']}-api-calls-${crypto.randomBytes(16).toString("hex")}`,
+          [artifactFile],
           tempDirectory,
           { continueOnError: false }
         );

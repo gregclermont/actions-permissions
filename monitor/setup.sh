@@ -27,7 +27,7 @@ sudo passwd -d mitmproxyuser
 
 # install uv and mitmproxy as mitmproxyuser
 sudo -u mitmproxyuser -H bash -e -c 'curl -LsSf https://astral.sh/uv/install.sh | sh'
-sudo -u mitmproxyuser -H bash -e -c 'cd ~ && ~/.local/bin/uv venv && ~/.local/bin/uv pip install mitmproxy==11.1.3 requests==2.32.3'
+sudo -u mitmproxyuser -H bash -e -c 'cd ~ && ~/.local/bin/uv venv && ~/.local/bin/uv pip install mitmproxy==11.1.3'
 
 sudo cp mitm_plugin.py /home/mitmproxyuser/mitm_plugin.py
 sudo -u mitmproxyuser -H bash -e -c "cd /home/mitmproxyuser && \
@@ -43,9 +43,6 @@ sudo -u mitmproxyuser -H bash -e -c "cd /home/mitmproxyuser && \
         --set debug='$RUNNER_DEBUG' \
         --set ACTIONS_ID_TOKEN_REQUEST_URL='$ACTIONS_ID_TOKEN_REQUEST_URL' \
         --set ACTIONS_ID_TOKEN_REQUEST_TOKEN='$ACTIONS_ID_TOKEN_REQUEST_TOKEN' \
-        --set GITHUB_REPOSITORY_ID='$GITHUB_REPOSITORY_ID' \
-        --set GITHUB_REPOSITORY='$GITHUB_REPOSITORY' \
-        --set GITHUB_API_URL='$GITHUB_API_URL' \
         &"
 
 # wait for mitmdump to start and generate CA certificate

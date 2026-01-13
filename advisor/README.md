@@ -1,21 +1,29 @@
 # GitHub token permissions Advisor action (PUBLIC BETA)
 
+The Advisor action analyzes API call logs collected by the Monitor action and recommends the minimal permissions required for your workflow.
+
 ## Usage
 
-The index.js script can be invoked as:
-
-* GitHub action.
-
-  See [workflow.yml](workflow.yml) for an example of how to use the Advisor action. Copy the workflow to your repository and manually dispatch the workflow from the Actions tab to generate the aggregated report from the last `n` runs.
+* **GitHub Action**: See [workflow.yml](workflow.yml) for an example. Copy the workflow to your repository and manually dispatch it from the Actions tab.
 
   ![Run workflow form with input fields](../res/dispatch.png "Run workflow")
 
-* Command line tool.
-
-  Download the [dist/index.js](dist/index.js) script and run it as:
+* **Command line**:
 
   ```bash
-  node index.js <workflow_name.yml> <number_of_the_last_runs> <github_owner> <repo_name> <branch_name>
+  export GITHUB_TOKEN=your_pat_with_repo_scope
+  node index.js <workflow_name.yml> <number_of_runs> <owner> <repo> <branch> [--format yaml] [--verbose]
   ```
 
-  An environment variable `GITHUB_TOKEN` must be set to your [PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `repo` scope granted for the repository you want to analyze.
+  Example:
+  ```bash
+  node index.js ci.yml 10 github actions-permissions main --format yaml --verbose
+  ```
+
+## How it works
+
+1. Downloads API call artifacts from the last N successful workflow runs
+2. Aggregates all API calls across runs and jobs
+3. Analyzes each API endpoint to determine required permissions
+4. For ambiguous endpoints (e.g., issues vs pull-requests), makes additional API calls to disambiguate
+5. Outputs the minimal permissions needed for each job

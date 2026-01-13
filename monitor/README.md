@@ -2,7 +2,7 @@
 
 ## Usage
 
-Include the Monitor action in every job of your workflow. The actions should be the first step in the job, even before the checkout action.
+Include the Monitor action in every job of your workflow. The action should be the first step in the job, even before the checkout action.
 
 ```yaml
 ...
@@ -18,11 +18,9 @@ jobs:
 ...
 ```
 
-The Monitor action generates a summary report in the repository Actions tab with the recommendations for each successfully completed job.
+The Monitor action captures all GitHub API calls made using the workflow's token and displays them in the workflow summary. The raw API call data is saved as an artifact for later analysis by the Advisor action.
 
-![Workflow run summary with permissions recommendations for every job](../res/summary.png "Minimal required permissions")
-
-Additionally the reports for every job are saved as a workflow artifact for consumption later by the Advisor action. Each artifact is really small (less than 200 bytes), but if you don't plan to use the Advisor, you can prevent the creation of the artifacts by setting the `create_artifact` in the configuration to `false`.
+To get permission recommendations, run the [Advisor action](../advisor) after collecting data from several workflow runs.
 
 ## Configuration
 
@@ -32,13 +30,13 @@ The Monitor action accepts a `config` input parameter. The configuration is a JS
 { "create_artifact": true, "enabled": true, "debug": false }
 ```
 
-* `create_artifact` - if set to `false`, the Monitor action will not create a workflow artifact with the summary report. The default value is `true`.
+* `create_artifact` - if set to `false`, the Monitor action will not create a workflow artifact with the API call log. The default value is `true`.
 
-* `enabled` - if set to `false`, the Monitor action will not monitor the usage of the GitHub token. The default value is `true`.
+* `enabled` - if set to `false`, the Monitor action will not monitor API calls. The default value is `true`.
 
-* `debug` - if set to `true`, the Monitor action will print additional debug information to the console. The default value is `false`. (Alternatively, debug logging can be enabled by restarting the runner with the debug checkbox marked or passing `debug` input parameter to the action.)
+* `debug` - if set to `true`, the Monitor action will print additional debug information to the console. The default value is `false`.
 
-If the configuration is not provided, the default values are used, but it is recommended to provide a [variable](https://docs.github.com/en/actions/learn-github-actions/variables#defining-configuration-variables-for-multiple-workflows) explicitly even if doesn't exist yet. This will make it easier to provide the configuration later without changing the workflows:
+If the configuration is not provided, the default values are used, but it is recommended to provide a [variable](https://docs.github.com/en/actions/learn-github-actions/variables#defining-configuration-variables-for-multiple-workflows) explicitly:
 
 ```yaml
       - uses: GitHubSecurityLab/actions-permissions/monitor@v1
@@ -48,12 +46,8 @@ If the configuration is not provided, the default values are used, but it is rec
 
 ## Known limitations
 
-The Monitor action is not able to detect the usage of the GitHub token in the following cases:
-
 * Only Linux runners are supported. macOS and Windows are not supported.
 
-* GitHub GraphQL API usage is not monitored. It would require parsing and understanding the GraphQL queries. Pull-requests are welcome.
+* GitHub GraphQL API usage is not monitored.
 
-* The `discussions` permission type is not supported yet. AFAIK it is GraphQL only.
-
-* Since the monitor is client based (runs on the Actions runner) it can't detect the usage of the GitHub token if it is passed to a third party web service, which calls the GitHub API back while the Action is running.
+* Since the monitor runs on the Actions runner, it can't detect GitHub API calls made by third-party services that receive the token.

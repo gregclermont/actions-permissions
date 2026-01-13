@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository contains two GitHub Actions for monitoring and recommending minimal GITHUB_TOKEN permissions:
 
-- **Monitor** (`monitor/`): Intercepts GitHub API calls during workflow execution using a transparent mitmproxy to detect which permissions are actually used
-- **Advisor** (`advisor/`): Aggregates permission recommendations from multiple Monitor runs to provide consolidated advice
+- **Monitor** (`monitor/`): Captures raw GitHub API calls during workflow execution
+- **Advisor** (`advisor/`): Analyzes captured API calls and recommends minimal permissions
 
 ## Build Commands
 
@@ -27,33 +27,38 @@ The built output goes to `dist/index.js` in each directory.
 
 ### Monitor Action (`monitor/`)
 
-1. **index.js**: Entry point that runs in two phases:
+**Purpose**: Observe what GitHub API calls a workflow makes.
+
+1. **`index.js`**: Entry point with two phases:
    - Initial phase: Spawns `setup.sh` to configure transparent proxy
-   - Post phase (`post-if: always()`): Reads captured API calls from `/home/mitmproxyuser/out.txt`, parses permissions, generates summary, and uploads artifact
+   - Post phase: Reads captured API calls from `/home/mitmproxyuser/out.txt`, displays in summary, uploads as artifact
 
-2. **setup.sh**: Linux-only setup for transparent proxy:
+2. **`setup.sh`**: Linux-only setup for transparent proxy:
    - Creates `mitmproxyuser` to run proxy (avoids intercepting proxy's own traffic)
-   - Installs uv, then uses it to install mitmproxy and requests
-   - Configures CA certificates for various tools (Node, Python requests, curl, AWS, Elixir Hex)
-   - Sets up traffic redirection via iptables
+   - Installs mitmproxy via uv
+   - Configures CA certificates and iptables redirection
 
-3. **mitm_plugin.py**: mitmproxy addon that:
-   - Intercepts HTTP requests containing the GitHub token
-   - Maps API paths to permission types using `rest_api_map` tree and pattern matching
-   - Handles special cases like issues vs pull-requests disambiguation
-   - Writes JSON records to output file
+3. **`mitm_plugin.py`**: Simple mitmproxy addon (~100 lines) that:
+   - Detects requests using the GitHub token
+   - Logs raw request data: `{method, host, path, query}`
 
 ### Advisor Action (`advisor/`)
 
-**index.js**: Can run as GitHub Action or CLI tool:
-- Fetches workflow runs via GitHub API
-- Downloads job logs to find artifact names (pattern: `{job}-permissions-{hex}`)
-- Extracts permission data from artifacts
-- Aggregates permissions across jobs and runs
+**Purpose**: Analyze API calls and recommend permissions.
 
-## Key Implementation Details
+1. **`index.js`**: Orchestrates the analysis:
+   - Downloads API call artifacts from workflow runs
+   - Calls `analyze.py` via `uv run` for permission mapping
+   - Displays aggregated permission recommendations
 
-- Permission mapping in `mitm_plugin.py` uses a tree structure for efficient lookup of ~167 API endpoint patterns
-- Issues and pull-requests share many endpoints; the plugin makes additional API calls to disambiguate
-- Only Linux runners are supported
-- GraphQL API is not monitored (would require query parsing)
+2. **`analyze.py`**: Permission analysis logic:
+   - Maps API paths to permission types
+   - Makes batch API calls to disambiguate issues vs PRs
+   - Checks if repos are public (public repo reads need no token)
+
+## Key Design Decisions
+
+- **Separation of concerns**: Monitor only observes, Advisor analyzes. This keeps the proxy code simple and allows improving analysis logic without re-running workflows.
+- **Raw data artifacts**: Monitor stores raw API calls, not computed permissions. This allows re-analysis with updated logic.
+- **Batch disambiguation**: Issue/PR disambiguation API calls happen at analysis time, batched and deduplicated.
+- **Linux-only**: Only Linux runners are supported (uses iptables for transparent proxy).
