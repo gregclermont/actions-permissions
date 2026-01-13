@@ -14,11 +14,7 @@ sudo cp proxy.py /home/mitmproxyuser/proxy.py
 
 # start proxy in background
 # Arguments: hosts token [id_token_url] [id_token]
-sudo -u mitmproxyuser env \
-  HOME=/home/mitmproxyuser \
-  XDG_CONFIG_HOME=/home/mitmproxyuser/.config \
-  XDG_CACHE_HOME=/home/mitmproxyuser/.cache \
-  /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py \
+sudo -i -u mitmproxyuser /home/mitmproxyuser/.local/bin/uv run /home/mitmproxyuser/proxy.py \
     --hosts "$1" --token "$2" --id-token-url "$3" --id-token "$4" &
 
 # wait for proxy to start and generate CA certificate
