@@ -52,23 +52,24 @@ async function run() {
       // Parse JSONL format
       const requests = data.split('\n').map(line => JSON.parse(line));
 
-      // Build summary grouped by user-agent in chronological order
+      // Build summary table grouped by user-agent in chronological order
       let summary = core.summary.addHeading('GitHub API calls detected', 4);
       if (requests.length === 0) {
         summary.addRaw('No GitHub API calls to monitored hosts.');
       } else {
-        const lines = [];
+        let html = '<table>';
         let currentUA = null;
         for (const req of requests) {
           const ua = req.user_agent || 'unknown';
           if (ua !== currentUA) {
             currentUA = ua;
-            lines.push(ua);
+            html += `<tr><th colspan="3">${ua}</th></tr>`;
           }
           const label = req.oidc ? ' (OIDC)' : '';
-          lines.push(`  ${req.method} ${req.host}${req.path}${label}`);
+          html += `<tr><td>${req.method}</td><td>${req.host}</td><td>${req.path}${label}</td></tr>`;
         }
-        summary.addCodeBlock(lines.join('\n'), 'text');
+        html += '</table>';
+        summary.addRaw(html);
       }
       await summary.write();
 
