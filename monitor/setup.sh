@@ -6,8 +6,9 @@ echo "$(date +%T.%3N) setup.sh started"
 
 # create mitmproxyuser, otherwise proxy won't intercept local traffic from the same user
 echo "$(date +%T.%3N) Creating user..."
-sudo useradd --create-home mitmproxyuser
-sudo passwd -d mitmproxyuser
+sudo useradd mitmproxyuser
+sudo mkdir -p /home/mitmproxyuser/.local/bin
+sudo chown -R mitmproxyuser:mitmproxyuser /home/mitmproxyuser
 echo "$(date +%T.%3N) User created"
 
 # install uv as mitmproxyuser (UV_UNMANAGED_INSTALL skips receipt file for CI)
