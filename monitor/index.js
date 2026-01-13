@@ -38,12 +38,7 @@ async function run() {
 
     if (!!core.getState('isPost')) {
 
-      let rootDir = '';
-      if (process.env.RUNNER_OS === 'Linux') {
-        rootDir = '/home/mitmproxyuser';
-      } else if (process.env.RUNNER_OS === 'macOS') {
-        rootDir = '/Users/mitmproxyuser';
-      }
+      const rootDir = '/home/mitmproxyuser';
 
       const debugLog = `${rootDir}/debug.log`;
       if (fs.existsSync(debugLog)) {

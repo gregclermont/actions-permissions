@@ -13,13 +13,6 @@ jobs:
       - uses: GitHubSecurityLab/actions-permissions/monitor@v1
         with:
           config: ${{ vars.PERMISSIONS_CONFIG }}
-...
-  job2:
-    runs-on: macos-latest
-    steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        with:
-          config: ${{ vars.PERMISSIONS_CONFIG }}
 
       - uses: actions/checkout@v3
 ...
@@ -57,7 +50,7 @@ If the configuration is not provided, the default values are used, but it is rec
 
 The Monitor action is not able to detect the usage of the GitHub token in the following cases:
 
-* WindowsOS runners are not supported (yet, pull-requests are welcome if you know how to redirect all OS outgoing request through a transparent proxy, but not the outgoing proxy traffic itself).
+* Only Linux runners are supported. macOS and Windows are not supported.
 
 * GitHub GraphQL API usage is not monitored. It would require parsing and understanding the GraphQL queries. Pull-requests are welcome.
 
